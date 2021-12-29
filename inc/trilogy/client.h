@@ -545,8 +545,10 @@ void trilogy_free(trilogy_conn_t *conn);
 
 /* trilogy_stmt_prepare_send - Send a prepared statement prepare command to the server.
  *
- * conn - A connected trilogy_conn_t pointer. Using a disconnected trilogy_conn_t is
- *        undefined.
+ * conn     - A connected trilogy_conn_t pointer. Using a disconnected trilogy_conn_t is
+ *            undefined.
+ * stmt     - A pointer to the buffer containing the statement to prepare.
+ * stmt_len - The length of the data buffer.
  *
  * Return values:
  *   TRILOGY_OK     - The quit command was successfully sent to the server.
@@ -588,6 +590,7 @@ typedef trilogy_stmt_ok_packet_t trilogy_stmt_t;
  *   TRILOGY_PROTOCOL_VIOLATION - An error occurred while processing a network
  *                                packet.
  *   TRILOGY_SYSERR             - A system error occurred, check errno.
+ *   TRILOGY_CLOSED_CONNECTION  - The connection is closed.
  */
 int trilogy_stmt_prepare_recv(trilogy_conn_t *conn, trilogy_stmt_t *stmt_out);
 
@@ -656,6 +659,7 @@ int trilogy_stmt_execute_send(trilogy_conn_t *conn, trilogy_stmt_t *stmt, uint8_
  *   TRILOGY_PROTOCOL_VIOLATION - An error occurred while processing a network
  *                                packet.
  *   TRILOGY_SYSERR             - A system error occurred, check errno.
+ *   TRILOGY_CLOSED_CONNECTION  - The connection is closed.
  */
 int trilogy_stmt_execute_recv(trilogy_conn_t *conn, uint64_t *column_count_out);
 
@@ -688,6 +692,7 @@ int trilogy_stmt_execute_recv(trilogy_conn_t *conn, uint64_t *column_count_out);
  *   TRILOGY_PROTOCOL_VIOLATION - Invalid length parsed for a TIME/DATETIME/TIMESTAMP value.
  *   TRILOGY_UNKNOWN_TYPE       - An unsupported or unknown MySQL type was seen.
  *   TRILOGY_SYSERR             - A system error occurred, check errno.
+ *   TRILOGY_CLOSED_CONNECTION  - The connection is closed.
  */
 int trilogy_stmt_read_row(trilogy_conn_t *conn, trilogy_stmt_t *stmt, trilogy_column_packet_t *columns,
                           trilogy_binary_value_t *values_out);
@@ -729,6 +734,7 @@ int trilogy_stmt_reset_send(trilogy_conn_t *conn, trilogy_stmt_t *stmt);
  *   TRILOGY_PROTOCOL_VIOLATION - An error occurred while processing a network
  *                                packet.
  *   TRILOGY_SYSERR             - A system error occurred, check errno.
+ *   TRILOGY_CLOSED_CONNECTION  - The connection is closed.
  */
 int trilogy_stmt_reset_recv(trilogy_conn_t *conn);
 
