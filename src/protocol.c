@@ -788,7 +788,6 @@ int trilogy_build_stmt_execute_packet(trilogy_builder_t *builder, uint32_t stmt_
                 CHECKED(trilogy_builder_write_uint8(builder, val.as.uint8));
 
                 break;
-            case TRILOGY_TYPE_YEAR:
             case TRILOGY_TYPE_SHORT:
                 CHECKED(trilogy_builder_write_uint16(builder, val.as.uint16));
 
@@ -808,6 +807,10 @@ int trilogy_build_stmt_execute_packet(trilogy_builder_t *builder, uint32_t stmt_
                 break;
             case TRILOGY_TYPE_DOUBLE:
                 CHECKED(trilogy_builder_write_double(builder, val.as.dbl));
+
+                break;
+            case TRILOGY_TYPE_YEAR:
+                CHECKED(trilogy_builder_write_uint16(builder, val.as.year));
 
                 break;
             case TRILOGY_TYPE_TIME: {
@@ -1052,7 +1055,7 @@ int trilogy_parse_stmt_row_packet(const uint8_t *buff, size_t len, trilogy_colum
 
                 break;
             case TRILOGY_TYPE_YEAR:
-                CHECKED(trilogy_reader_get_uint16(&reader, &out_values[i].as.date.year));
+                CHECKED(trilogy_reader_get_uint16(&reader, &out_values[i].as.year));
 
                 break;
             case TRILOGY_TYPE_TINY:
