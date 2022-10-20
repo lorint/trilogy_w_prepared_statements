@@ -1,7 +1,4 @@
-require File.expand_path("../setup", __FILE__)
-
-require "trilogy"
-require "timeout"
+require "test_helper"
 
 class ClientTest < TrilogyTest
   def test_trilogy_connected_host
@@ -26,6 +23,13 @@ class ClientTest < TrilogyTest
     end
   end
 
+  def test_trilogy_connect_with_native_password_auth_switch
+    client = new_tcp_client username: "native"
+    refute_nil client
+  ensure
+    ensure_closed client
+  end
+
   def test_trilogy_connect_tcp_fixnum_port
     assert_raises TypeError do
       new_tcp_client port: "13306"
@@ -42,7 +46,11 @@ class ClientTest < TrilogyTest
   def test_trilogy_connect_unix_socket
     return skip unless ["127.0.0.1", "localhost"].include?(DEFAULT_HOST)
 
-    client = new_unix_client
+    socket = new_tcp_client.query("SHOW VARIABLES LIKE 'socket'").to_a[0][1]
+
+    assert File.exist?(socket), "cound not find socket at #{socket}"
+
+    client = new_unix_client(socket)
     refute_nil client
   ensure
     ensure_closed client
@@ -99,6 +107,8 @@ class ClientTest < TrilogyTest
 
   def test_trilogy_query_values_vs_query_allocations
     client = new_tcp_client
+    client.query_with_flags("SELECT 1", client.query_flags) # warm up
+
     row_count = 1000
     sql = (1..row_count).map{|i| "SELECT #{i}" }.join(" UNION ")
 
@@ -279,6 +289,18 @@ class ClientTest < TrilogyTest
     ensure_closed client
   end
 
+  def test_trilogy_closed?
+    client = new_tcp_client
+
+    refute_predicate client, :closed?
+
+    client.close
+
+    assert_predicate client, :closed?
+  ensure
+    ensure_closed client
+  end
+
   def test_read_timeout
     client = new_tcp_client(read_timeout: 0.1)
 
@@ -407,7 +429,7 @@ class ClientTest < TrilogyTest
   end
 
   def test_timeout_deadlines
-    assert_elapsed(0.1, 0.03) do
+    assert_elapsed(0.1, 0.3) do
       client = new_tcp_client
 
       assert_raises Timeout::Error do
@@ -621,5 +643,11 @@ class ClientTest < TrilogyTest
       new_tcp_client(host: "mysql.invalid", port: 3306)
     end
     assert_equal "trilogy_connect - unable to connect to mysql.invalid:3306: TRILOGY_DNS_ERR", ex.message
+  end
+
+  def test_memsize
+    require 'objspace'
+    client = new_tcp_client
+    assert_kind_of Integer, ObjectSpace.memsize_of(client)
   end
 end

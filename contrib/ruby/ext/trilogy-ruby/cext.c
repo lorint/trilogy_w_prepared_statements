@@ -31,10 +31,39 @@ struct trilogy_ctx {
     unsigned int query_flags;
 };
 
+static void free_trilogy(void *ptr)
+{
+    struct trilogy_ctx *ctx = ptr;
+    if (ctx->conn.socket != NULL) {
+        trilogy_free(&ctx->conn);
+    }
+    xfree(ptr);
+}
+
+static size_t trilogy_memsize(const void *ptr) {
+    const struct trilogy_ctx *ctx = ptr;
+    size_t memsize = sizeof(struct trilogy_ctx);
+    if (ctx->conn.socket != NULL) {
+        memsize += sizeof(trilogy_sock_t);
+    }
+    memsize += ctx->conn.packet_buffer.cap;
+    return memsize;
+}
+
+const rb_data_type_t trilogy_data_type = {
+    .wrap_struct_name = "trilogy",
+    .function = {
+        .dmark = NULL,
+        .dfree = free_trilogy,
+        .dsize = trilogy_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+};
+
 static struct trilogy_ctx *get_ctx(VALUE obj)
 {
     struct trilogy_ctx *ctx;
-    Data_Get_Struct(obj, struct trilogy_ctx, ctx);
+    TypedData_Get_Struct(obj, struct trilogy_ctx, &trilogy_data_type, ctx);
     return ctx;
 }
 
@@ -91,20 +120,11 @@ static void handle_trilogy_error(struct trilogy_ctx *ctx, int rc, const char *ms
     }
 }
 
-static void free_trilogy(struct trilogy_ctx *ctx)
-{
-    if (ctx->conn.socket != NULL) {
-        trilogy_free(&ctx->conn);
-    }
-}
-
 static VALUE allocate_trilogy(VALUE klass)
 {
     struct trilogy_ctx *ctx;
 
-    VALUE obj = Data_Make_Struct(klass, struct trilogy_ctx, NULL, free_trilogy, ctx);
-
-    memset(ctx->server_version, 0, sizeof(ctx->server_version));
+    VALUE obj = TypedData_Make_Struct(klass, struct trilogy_ctx, &trilogy_data_type, ctx);
 
     ctx->query_flags = TRILOGY_FLAGS_DEFAULT;
 
@@ -826,6 +846,17 @@ static VALUE rb_trilogy_close(VALUE self)
     return Qnil;
 }
 
+static VALUE rb_trilogy_closed(VALUE self)
+{
+    struct trilogy_ctx *ctx = get_ctx(self);
+
+    if (ctx->conn.socket == NULL) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
 static VALUE rb_trilogy_last_insert_id(VALUE self) { return ULL2NUM(get_open_ctx(self)->conn.last_insert_id); }
 
 static VALUE rb_trilogy_affected_rows(VALUE self) { return ULL2NUM(get_open_ctx(self)->conn.affected_rows); }
@@ -897,6 +928,7 @@ void Init_cext()
     rb_define_method(Trilogy, "ping", rb_trilogy_ping, 0);
     rb_define_method(Trilogy, "escape", rb_trilogy_escape, 1);
     rb_define_method(Trilogy, "close", rb_trilogy_close, 0);
+    rb_define_method(Trilogy, "closed?", rb_trilogy_closed, 0);
     rb_define_method(Trilogy, "last_insert_id", rb_trilogy_last_insert_id, 0);
     rb_define_method(Trilogy, "affected_rows", rb_trilogy_affected_rows, 0);
     rb_define_method(Trilogy, "warning_count", rb_trilogy_warning_count, 0);

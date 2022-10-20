@@ -267,22 +267,15 @@ int trilogy_parse_handshake_packet(const uint8_t *buff, size_t len, trilogy_hand
     // This space is reserved. It should be all NULL bytes but some tools or
     // future versions of MySQL-compatible clients may use it. This library
     // opts to skip the validation as some servers don't respect the protocol.
-    //
-    static const uint8_t null_filler[10] = {0};
-
-    const void *str;
-    CHECKED(trilogy_reader_get_buffer(&reader, 10, &str));
-
-    if (memcmp(str, null_filler, 10) != 0) {
-        // corrupt handshake packet
-        return TRILOGY_PROTOCOL_VIOLATION;
-    }
+    CHECKED(trilogy_reader_get_buffer(&reader, 10, NULL));
 
     if (out_packet->capabilities & TRILOGY_CAPABILITIES_SECURE_CONNECTION && auth_data_len > 8) {
         uint8_t remaining_auth_data_len = auth_data_len - 8;
 
-        if (remaining_auth_data_len > 13) {
-            remaining_auth_data_len = 13;
+        // The auth plugins we support all provide exactly 21 bytes of
+        // auth_data. Reject any other values for auth_data_len.
+        if (SCRAMBLE_LEN + 1 != auth_data_len) {
+            return TRILOGY_PROTOCOL_VIOLATION;
         }
 
         CHECKED(trilogy_reader_copy_buffer(&reader, remaining_auth_data_len, out_packet->scramble + 8));
@@ -614,10 +607,12 @@ int trilogy_build_auth_switch_response_packet(trilogy_builder_t *builder, const 
     unsigned int auth_response_len = 0;
     uint8_t auth_response[EVP_MAX_MD_SIZE];
 
-    if (!strcmp("caching_sha2_password", auth_plugin)) {
-        trilogy_pack_scramble_sha2_hash(scramble, pass, pass_len, auth_response, &auth_response_len);
-    } else {
-        trilogy_pack_scramble_native_hash(scramble, pass, pass_len, auth_response, &auth_response_len);
+    if (pass_len > 0) {
+        if (!strcmp("caching_sha2_password", auth_plugin)) {
+            trilogy_pack_scramble_sha2_hash(scramble, pass, pass_len, auth_response, &auth_response_len);
+        } else {
+            trilogy_pack_scramble_native_hash(scramble, pass, pass_len, auth_response, &auth_response_len);
+        }
     }
 
     CHECKED(trilogy_builder_write_buffer(builder, auth_response, auth_response_len));
