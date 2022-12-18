@@ -1,12 +1,12 @@
 require File.expand_path("../lib/trilogy/version", __FILE__)
 
 Gem::Specification.new do |s|
-  s.name = "trilogy"
+  s.name = 'trilogy_w_prepared_statements'
   s.version = Trilogy::VERSION
-  s.authors = ["GitHub Engineering"]
+  s.authors = ['GitHub Engineering', 'Brian Lopez']
   s.email = "opensource+trilogy@github.com"
   s.license = "MIT"
-  s.homepage = "https://github.com/github/trilogy"
+  s.homepage = "https://github.com/lorint/trilogy_w_prepared_statements"
   s.summary = "A friendly MySQL-compatible library for Ruby, binding to libtrilogy"
 
   s.extensions = "ext/trilogy-ruby/extconf.rb"

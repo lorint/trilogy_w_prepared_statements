@@ -1,5 +1,7 @@
 # Trilogy
 
+This is a fork of Github's Trilogy client library v2.20 which also includes [updates written by Brian Lopez](https://github.com/brianmario/trilogy/tree/binary-protocol) to enable executing prepared statements.
+
 Trilogy is a client library for MySQL-compatible database servers, designed for performance, flexibility, and ease of embedding.
 
 It's currently in production use on github.com.

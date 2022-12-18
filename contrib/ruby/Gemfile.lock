@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    trilogy (2.2.0)
+    trilogy_w_prepared_statements (2.2.0)
 
 GEM
   remote: https://rubygems.org/
@@ -21,4 +21,7 @@ DEPENDENCIES
   minitest (~> 5.5)
   mysql2
   rake-compiler (~> 1.0)
-  trilogy!
+  trilogy_w_prepared_statements!
+
+BUNDLED WITH
+   2.3.26
